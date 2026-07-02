@@ -3,81 +3,147 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VERITAS — LLM Deception Detection</title>
+<title>Veritas — Case file on linguistic deception detection</title>
+<meta name="description" content="Veritas is a fine-tuned LLM that reads written statements for linguistic markers of deception and returns a confidence score, not a verdict.">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 
   :root{
-    --bg:#0B0D0E;
-    --paper:#E8E4DA;
-    --paper-dim:#c9c5ba;
-    --truth:#4FA88C;
-    --lie:#C1443C;
-    --grey:#8B8F91;
-    --line:#232629;
+    /* --- token system --- */
+    --ink:#0B0C0D;
+    --ink-2:#111417;
+    --ink-3:#161a1d;
+    --paper:#ECE7DA;
+    --paper-dim:#9D998C;
+    --rule:#24282B;
+    --rule-soft:#1A1D1F;
+    --truth:#4C9A7C;
+    --lie:#B0392E;
+    --stamp:#C89B3C;
+
+    --serif:'Newsreader', Georgia, serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+
+    /* 8px scale, with a couple of deliberate deviations noted inline */
+    --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px; --s7:96px; --s8:128px;
   }
+
   *{margin:0;padding:0;box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   body{
-    background:var(--bg);
+    background:var(--ink);
     color:var(--paper);
-    font-family:'IBM Plex Sans',sans-serif;
+    font-family:var(--sans);
     line-height:1.6;
+    overflow-x:hidden;
+    position:relative;
   }
-  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* subtle blueprint grid, fixed under everything */
+  body::before{
+    content:'';
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(76,154,124,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(76,154,124,0.05) 1px, transparent 1px);
+    background-size:34px 34px;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 72%);
+  }
 
   a{color:inherit;}
+  .mono{font-family:var(--mono);}
 
-  /* ---- layout shell ---- */
-  .wrap{max-width:920px;margin:0 auto;padding:0 24px;}
+  ::selection{background:var(--stamp);color:var(--ink);}
+
+  :focus{outline:none;}
+  :focus-visible{outline:2px solid var(--stamp);outline-offset:3px;border-radius:1px;}
+
+  .wrap{max-width:940px;margin:0 auto;padding:0 var(--s3);position:relative;z-index:1;}
+  .visually-hidden{
+    position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+
+  /* ---------------- nav ---------------- */
   header.nav{
-    position:sticky;top:0;z-index:10;
-    background:rgba(11,13,14,0.9);
+    position:sticky;top:0;z-index:20;
+    background:rgba(11,12,13,0.88);
     backdrop-filter:blur(6px);
-    border-bottom:1px solid var(--line);
+    border-bottom:1px solid var(--rule);
   }
-  .nav .wrap{
-    display:flex;align-items:center;justify-content:space-between;
-    height:56px;
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;}
+  .nav .brand{font-family:var(--mono);font-weight:700;letter-spacing:0.06em;font-size:14px;}
+  .nav .brand .dot{color:var(--lie);}
+  .nav .links{display:flex;align-items:center;gap:var(--s4);}
+  .nav .links a.section-link{
+    font-family:var(--mono);font-size:12px;color:var(--paper-dim);text-decoration:none;
+    transition:color .15s ease;
   }
-  .nav .brand{font-family:'IBM Plex Mono',monospace;font-weight:700;letter-spacing:0.08em;font-size:14px;}
-  .nav .brand span{color:var(--lie);}
+  .nav .links a.section-link:hover{color:var(--paper);}
   .nav a.cta{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    font-family:var(--mono);font-size:12px;
     border:1px solid var(--paper-dim);padding:6px 12px;border-radius:2px;
-    text-decoration:none;transition:all .2s ease;
+    text-decoration:none;transition:background .15s ease, color .15s ease, border-color .15s ease;
+    white-space:nowrap;
   }
-  .nav a.cta:hover{background:var(--paper);color:var(--bg);}
+  .nav a.cta:hover{background:var(--paper);color:var(--ink);border-color:var(--paper);}
+  @media (max-width:640px){ .nav .links{display:none;} }
 
-  /* ---- hero ---- */
-  .hero{padding:100px 0 70px;position:relative;}
-  .eyebrow{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--grey);
-    letter-spacing:0.15em;text-transform:uppercase;margin-bottom:20px;
-    display:flex;align-items:center;gap:10px;
+  /* ---------------- hero (asymmetric, editorial) ---------------- */
+  .hero{padding:var(--s7) 0 var(--s5);}
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1fr 220px;
+    gap:var(--s5);
+    align-items:start;
   }
-  .eyebrow::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--lie);animation:blink 1.6s infinite;}
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;color:var(--paper-dim);
+    letter-spacing:0.13em;text-transform:uppercase;margin-bottom:var(--s3);
+    display:flex;align-items:center;gap:var(--s1);
+  }
+  .eyebrow::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--lie);animation:blink 1.6s infinite;flex:none;}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
 
   h1{
-    font-family:'IBM Plex Mono',monospace;
-    font-weight:700;
-    font-size:clamp(42px,8vw,84px);
-    letter-spacing:-0.02em;
-    line-height:0.95;
+    font-family:var(--serif);
+    font-weight:500;
+    font-size:clamp(44px,7vw,78px);
+    letter-spacing:-0.01em;
+    line-height:0.98;
   }
-  h1 em{font-style:normal;color:var(--truth);}
-  .lede{
-    max-width:520px;margin-top:22px;font-size:17px;color:#c8c4ba;
+  h1 em{font-style:italic;font-weight:500;color:var(--stamp);}
+
+  .lede{max-width:480px;margin-top:var(--s3);font-size:17px;color:#C9C4B6;}
+
+  /* the case tab — pinned meta card, intentionally rotated */
+  .case-tab{
+    border:1px solid var(--rule);background:var(--ink-2);
+    padding:var(--s3) var(--s2);
+    transform:rotate(1.2deg);
+    margin-top:6px; /* deliberate off-grid nudge */
+  }
+  .case-tab .clip{display:block;margin-bottom:var(--s2);color:var(--paper-dim);}
+  .case-tab dl{font-family:var(--mono);font-size:11.5px;}
+  .case-tab dt{color:var(--paper-dim);margin-top:var(--s2);}
+  .case-tab dt:first-child{margin-top:0;}
+  .case-tab dd{color:var(--paper);margin-top:2px;}
+  @media (max-width:760px){
+    .hero-grid{grid-template-columns:1fr;}
+    .case-tab{transform:none;max-width:220px;}
   }
 
-  /* polygraph pulse svg */
-  .pulse-box{margin-top:56px;border:1px solid var(--line);background:#0e1113;}
-  .pulse-box svg{display:block;width:100%;height:120px;}
+  /* polygraph pulse — breaks out wider than the text column */
+  .pulse-box{
+    margin-top:var(--s6);
+    border:1px solid var(--rule);background:var(--ink-2);
+  }
+  .pulse-box svg{display:block;width:100%;height:110px;}
   .pulse-line{
     fill:none;stroke:var(--truth);stroke-width:2;
     stroke-dasharray:1400;stroke-dashoffset:1400;
-    animation:draw 3.2s ease-in-out infinite;
+    animation:draw 3.4s ease-in-out infinite;
   }
   @keyframes draw{
     0%{stroke-dashoffset:1400;stroke:var(--truth);}
@@ -86,83 +152,182 @@
     100%{stroke-dashoffset:-1400;stroke:var(--lie);}
   }
   .pulse-label{
-    display:flex;justify-content:space-between;
-    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--grey);
-    padding:10px 14px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:var(--s1);
+    font-family:var(--mono);font-size:10.5px;color:var(--paper-dim);
+    padding:var(--s2) var(--s2);border-top:1px solid var(--rule);
   }
 
-  /* ---- section shared ---- */
-  section{padding:64px 0;border-top:1px solid var(--line);}
-  .section-num{
-    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--grey);
-    margin-bottom:14px;
+  /* ---------------- section shell ---------------- */
+  section{padding:var(--s6) 0;border-top:1px solid var(--rule);position:relative;z-index:1;}
+  .exhibit-tag{
+    font-family:var(--mono);font-size:11.5px;color:var(--paper-dim);
+    letter-spacing:0.1em;text-transform:uppercase;margin-bottom:var(--s2);
   }
   h2{
-    font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;
-    margin-bottom:20px;letter-spacing:-0.01em;
+    font-family:var(--serif);font-size:32px;font-weight:500;
+    margin-bottom:var(--s3);letter-spacing:-0.01em;
   }
-  p.body-text{color:#c8c4ba;max-width:640px;}
+  p.body-text{color:#C9C4B6;max-width:600px;}
 
-  /* how it works */
-  .steps{display:grid;grid-template-columns:1fr;gap:0;margin-top:30px;}
-  .step{
-    display:grid;grid-template-columns:60px 1fr;gap:18px;
-    padding:20px 0;border-top:1px solid var(--line);
+  /* ---------------- Exhibit A: overview, margin-note layout ---------------- */
+  .overview-grid{
+    display:grid;grid-template-columns:230px 1fr;gap:var(--s5);align-items:start;
   }
-  .step:first-child{border-top:none;}
-  .step .tag{font-family:'IBM Plex Mono',monospace;color:var(--grey);font-size:13px;padding-top:2px;}
-  .step h3{font-size:16px;font-weight:600;margin-bottom:6px;}
-  .step p{color:#a9a59c;font-size:14.5px;max-width:520px;}
+  .margin-note{
+    font-family:var(--serif);font-style:italic;font-size:19px;line-height:1.5;
+    color:var(--paper);
+    padding-left:var(--s3);border-left:2px solid var(--stamp);
+    transform:rotate(-0.6deg);
+  }
+  @media (max-width:760px){
+    .overview-grid{grid-template-columns:1fr;}
+    .margin-note{order:2;margin-top:var(--s4);transform:none;}
+  }
 
-  /* case sample */
-  .case{
-    border:1px solid var(--line);background:#0e1113;padding:26px;margin-top:28px;
+  /* ---------------- Exhibit B: method, horizontal nodes ---------------- */
+  .method-row{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+    margin-top:var(--s4);
+    border-top:1px solid var(--rule);
   }
+  .method-node{
+    padding:var(--s3) var(--s3) var(--s2) 0;
+    border-right:1px solid var(--rule);
+    position:relative;
+  }
+  .method-node:last-child{border-right:none;padding-right:0;}
+  .method-node::before{
+    content:'';position:absolute;top:-1px;left:0;width:38px;height:2px;background:var(--stamp);
+  }
+  .method-node svg{color:var(--paper-dim);margin:var(--s3) 0 var(--s2);}
+  .method-node .tag{font-family:var(--mono);font-size:11px;color:var(--paper-dim);letter-spacing:0.1em;}
+  .method-node h3{font-family:var(--serif);font-weight:500;font-size:19px;margin:6px 0 var(--s2);}
+  .method-node p{color:#A9A59C;font-size:14px;max-width:280px;}
+  @media (max-width:760px){
+    .method-row{grid-template-columns:1fr;}
+    .method-node{border-right:none;border-bottom:1px solid var(--rule);padding:var(--s3) 0;}
+    .method-node:last-child{border-bottom:none;}
+  }
+
+  /* ---------------- Exhibit C: dossier (signature element) ---------------- */
+  .dossier-breakout{
+    width:100vw;position:relative;left:50%;margin-left:-50vw;
+    background:var(--ink-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+    padding:var(--s6) 0;
+  }
+  .dossier-inner{max-width:940px;margin:0 auto;padding:0 var(--s3);}
+  .dossier{
+    position:relative;overflow:hidden;
+    border:1px solid var(--rule);background:var(--ink);
+    padding:var(--s4);
+  }
+  .dossier .scanline{
+    position:absolute;left:0;right:0;top:0;height:2px;opacity:0;
+    background:linear-gradient(90deg, transparent, var(--truth) 20%, var(--stamp) 50%, var(--lie) 80%, transparent);
+    box-shadow:0 0 14px 1px rgba(200,155,60,0.35);
+  }
+  .dossier.is-scanning .scanline{opacity:.9;animation:sweep 2.6s ease-in-out;}
+  @keyframes sweep{0%{top:0;}100%{top:100%;}}
+
   .case-head{
-    display:flex;justify-content:space-between;align-items:center;
-    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--grey);
-    border-bottom:1px dashed var(--line);padding-bottom:14px;margin-bottom:18px;
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--s1);
+    font-family:var(--mono);font-size:11px;color:var(--paper-dim);
+    border-bottom:1px dashed var(--rule);padding-bottom:var(--s2);margin-bottom:var(--s3);
   }
-  .statement{font-size:16px;color:var(--paper);line-height:1.8;}
+  .statement{font-family:var(--serif);font-size:19px;color:var(--paper);line-height:1.8;}
   .flag{
     padding:1px 5px;border-radius:2px;cursor:default;
-    border-bottom:2px solid var(--lie);background:rgba(193,68,60,0.12);
+    border-bottom:2px solid var(--lie);background:rgba(176,57,46,0.14);
+    opacity:0;
   }
-  .flag.ok{border-bottom-color:var(--truth);background:rgba(79,168,140,0.12);}
-  .verdict{
-    margin-top:20px;display:flex;align-items:center;gap:14px;
-    font-family:'IBM Plex Mono',monospace;font-size:13px;
-  }
-  .meter{flex:1;height:6px;background:#1c2022;border-radius:3px;overflow:hidden;}
+  .flag.ok{border-bottom-color:var(--truth);background:rgba(76,154,124,0.14);}
+  .is-scanning .flag{animation:revealFlag .35s ease forwards;animation-delay:calc(var(--d,0) * .3s + .5s);}
+  @keyframes revealFlag{to{opacity:1;}}
+
+  .verdict{margin-top:var(--s3);display:flex;align-items:center;gap:var(--s2);font-family:var(--mono);font-size:13px;flex-wrap:wrap;}
+  .meter{flex:1;min-width:120px;height:6px;background:#1c2022;border-radius:3px;overflow:hidden;}
   .meter i{display:block;height:100%;width:78%;background:linear-gradient(90deg,var(--truth),var(--lie));}
   .verdict b{color:var(--lie);}
 
-  /* stack */
-  .stack-grid{
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-    gap:1px;background:var(--line);margin-top:26px;border:1px solid var(--line);
+  /* interactive analyzer */
+  .analyzer{margin-top:var(--s5);}
+  .analyzer-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s2);flex-wrap:wrap;margin-bottom:var(--s2);}
+  .analyzer-head h3{font-family:var(--serif);font-size:20px;font-weight:500;}
+  .analyzer-head span{font-family:var(--mono);font-size:11px;color:var(--paper-dim);}
+  label.field-label{display:block;font-family:var(--mono);font-size:11.5px;color:var(--paper-dim);letter-spacing:0.05em;margin-bottom:var(--s1);}
+  textarea#statement-input{
+    width:100%;min-height:96px;resize:vertical;
+    background:var(--ink);border:1px solid var(--rule);color:var(--paper);
+    font-family:var(--sans);font-size:15px;padding:var(--s2);border-radius:2px;
+    transition:border-color .15s ease;
   }
-  .stack-item{background:var(--bg);padding:16px;}
-  .stack-item .k{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--grey);}
-  .stack-item .v{font-size:14.5px;margin-top:4px;}
+  textarea#statement-input:hover{border-color:#3a3f43;}
+  textarea#statement-input:focus{border-color:var(--stamp);}
+  .analyzer-actions{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s2);}
+  button.btn-run{
+    font-family:var(--mono);font-size:13px;background:var(--paper);color:var(--ink);
+    border:none;padding:10px 18px;border-radius:2px;cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+  }
+  button.btn-run:hover{background:var(--stamp);}
+  button.btn-run:active{transform:translateY(1px);}
+  button.btn-run:disabled{opacity:.6;cursor:progress;}
+  .analyzer-error{
+    font-family:var(--mono);font-size:12.5px;color:var(--lie);display:none;
+  }
+  .analyzer-error.is-visible{display:block;}
 
-  /* footer / cta */
-  footer{padding:70px 0 50px;text-align:center;}
-  footer h2{font-size:28px;}
-  .btn-row{display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap;}
-  .btn{
-    font-family:'IBM Plex Mono',monospace;font-size:13px;text-decoration:none;
-    padding:12px 22px;border-radius:2px;transition:all .2s ease;
+  .analysis-result{
+    margin-top:var(--s3);border:1px solid var(--rule);background:var(--ink-2);
+    padding:var(--s3);min-height:56px;
   }
-  .btn.primary{background:var(--paper);color:var(--bg);}
+  .analysis-result .empty-state{font-family:var(--mono);font-size:12.5px;color:var(--paper-dim);}
+  .analysis-result .result-body{opacity:0;animation:fadeIn .18s ease forwards;}
+  @keyframes fadeIn{to{opacity:1;}}
+  .analysis-result .statement{font-size:16px;}
+  .analysis-result .caption{font-family:var(--mono);font-size:10.5px;color:var(--paper-dim);margin-top:var(--s2);}
+
+  /* ---------------- Exhibit D: stack, evidence mosaic ---------------- */
+  .stack-mosaic{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--rule);margin-top:var(--s4);border:1px solid var(--rule);
+  }
+  .stack-item{background:var(--ink);padding:var(--s3) var(--s2);}
+  .stack-item:nth-child(1){grid-column:span 2;background:var(--ink-2);}
+  .stack-item:nth-child(4){grid-column:span 2;}
+  .stack-item svg{color:var(--paper-dim);margin-bottom:var(--s2);}
+  .stack-item .k{font-family:var(--mono);font-size:10.5px;color:var(--paper-dim);letter-spacing:.08em;}
+  .stack-item .v{font-family:var(--serif);font-size:16px;margin-top:4px;}
+  @media (max-width:640px){
+    .stack-mosaic{grid-template-columns:repeat(2,1fr);}
+    .stack-item:nth-child(1),.stack-item:nth-child(4){grid-column:span 2;}
+  }
+
+  /* ---------------- footer / access ---------------- */
+  footer{padding:var(--s7) 0 var(--s6);text-align:center;}
+  .stamp-seal{
+    width:88px;height:88px;margin:0 auto var(--s3);color:var(--stamp);
+    transform:rotate(-8deg);opacity:.9;
+  }
+  footer h2{font-size:30px;}
+  footer p.body-text{margin:0 auto;text-align:center;}
+  .btn-row{display:flex;gap:var(--s2);justify-content:center;margin-top:var(--s4);flex-wrap:wrap;}
+  .btn{
+    font-family:var(--mono);font-size:13px;text-decoration:none;
+    padding:12px 22px;border-radius:2px;transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .btn.primary{background:var(--paper);color:var(--ink);}
   .btn.primary:hover{background:var(--truth);}
   .btn.ghost{border:1px solid var(--paper-dim);color:var(--paper);}
   .btn.ghost:hover{border-color:var(--paper);}
-  .foot-note{margin-top:40px;color:var(--grey);font-size:12px;font-family:'IBM Plex Mono',monospace;}
+  .foot-note{margin-top:var(--s5);color:var(--paper-dim);font-size:12px;font-family:var(--mono);}
 
   @media (prefers-reduced-motion: reduce){
     .pulse-line{animation:none;stroke-dashoffset:0;}
     .eyebrow::before{animation:none;}
+    .dossier .scanline{display:none;}
+    .flag{animation:none!important;opacity:1;}
+    .analysis-result .result-body{animation:none;opacity:1;}
   }
 </style>
 </head>
@@ -170,20 +335,40 @@
 
 <header class="nav">
   <div class="wrap">
-    <div class="brand">VERI<span>TAS</span></div>
+    <div class="brand">VERI<span class="dot">TAS</span></div>
+    <nav class="links" aria-label="Section navigation">
+      <a class="section-link" href="#exhibit-b">Method</a>
+      <a class="section-link" href="#exhibit-c">Try it</a>
+      <a class="section-link" href="#exhibit-e">Access</a>
+    </nav>
     <a class="cta" href="https://github.com/musaib120604/Veritas">View source →</a>
   </div>
 </header>
 
 <main class="wrap">
 
-  <section class="hero" style="border-top:none;">
-    <div class="eyebrow">Case file // deception analysis model</div>
-    <h1>Does it<br>hold <em>up?</em></h1>
-    <p class="lede">Veritas is an LLM fine-tuned to flag linguistic markers of deception in written statements — hedging, distancing language, inconsistent detail — and return a confidence score, not a verdict.</p>
+  <section class="hero" style="border-top:none;" aria-labelledby="hero-heading">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">Case no. 0192 — open investigation</p>
+        <h1 id="hero-heading">Does the story<br><em>hold together?</em></h1>
+        <p class="lede">Veritas reads a written statement the way an investigator reads a transcript — for hedging, distancing language, and details that don't quite line up — and returns a confidence score, not a verdict.</p>
+      </div>
+      <aside class="case-tab" aria-label="Case summary">
+        <svg class="clip" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M7 12.5 15 4.5a3 3 0 1 1 4.24 4.24L10.5 17.5a5 5 0 1 1-7.07-7.07L12 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <dl>
+          <dt>Status</dt><dd>Active / research</dd>
+          <dt>Model</dt><dd>Fine-tuned LLM</dd>
+          <dt>Input</dt><dd>Text only</dd>
+          <dt>Output</dt><dd>0–100 score</dd>
+        </dl>
+      </aside>
+    </div>
 
     <div class="pulse-box">
-      <svg viewBox="0 0 700 120" preserveAspectRatio="none">
+      <svg viewBox="0 0 700 120" preserveAspectRatio="none" role="img" aria-label="Animated waveform representing a fluctuating deception signal">
         <path class="pulse-line" d="M0,60 L80,60 L100,60 L115,20 L130,100 L145,60 L220,60 L240,60 L255,35 L270,85 L285,60 L400,60 L420,60 L432,10 L444,110 L456,60 L560,60 L580,60 L595,40 L610,80 L625,60 L700,60"/>
       </svg>
       <div class="pulse-label">
@@ -193,81 +378,227 @@
     </div>
   </section>
 
-  <section>
-    <div class="section-num">01 — Overview</div>
-    <h2>Read the statement, not the person</h2>
-    <p class="body-text">Veritas doesn't watch faces or measure pulse. It works entirely from text — transcripts, chat logs, written statements — scoring each claim against patterns associated with deceptive language in prior research: qualifier overuse, low self-reference, verb tense shifts, missing sensory detail.</p>
-  </section>
-
-  <section>
-    <div class="section-num">02 — How it works</div>
-    <h2>Three passes over every statement</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="tag mono">IN</div>
-        <div>
-          <h3>Statement intake</h3>
-          <p>Raw text is chunked into individual claims so each one can be scored independently rather than the passage as a whole.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="tag mono">02</div>
-        <div>
-          <h3>Linguistic scan</h3>
-          <p>The model checks each claim for known deception markers — hedges, distancing pronouns, tense inconsistency, over-specific or under-specific detail.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="tag mono">03</div>
-        <div>
-          <h3>Confidence score</h3>
-          <p>Flagged claims are weighted into a single 0–100 score with the contributing phrases highlighted, so the reasoning stays visible.</p>
-        </div>
+  <section aria-labelledby="exhibit-a-heading">
+    <p class="exhibit-tag">Exhibit A — Overview</p>
+    <div class="overview-grid">
+      <figure class="margin-note">
+        “Deception rarely lives in what's said. It lives in how carefully it's said.”
+      </figure>
+      <div>
+        <h2 id="exhibit-a-heading">Read the statement, not the person</h2>
+        <p class="body-text">Veritas doesn't watch faces or measure a pulse. It works entirely from text — transcripts, chat logs, written statements — scoring each claim against patterns linked to deceptive language in the research literature: qualifier overuse, low self-reference, verb-tense shifts, and detail that's either suspiciously thin or suspiciously rehearsed.</p>
       </div>
     </div>
   </section>
 
-  <section>
-    <div class="section-num">03 — Sample case</div>
-    <h2>What the output looks like</h2>
-    <div class="case">
-      <div class="case-head">
-        <span>CASE #0417</span>
-        <span>SOURCE: WRITTEN_STATEMENT</span>
+  <section id="exhibit-b" aria-labelledby="exhibit-b-heading">
+    <p class="exhibit-tag">Exhibit B — Method</p>
+    <h2 id="exhibit-b-heading">Three passes over every statement</h2>
+    <div class="method-row">
+      <div class="method-node">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8.5 12 13l9-4.5M3 8.5V17a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8.5M3 8.5 11 4a2 2 0 0 1 2 0l8 4.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        <p class="tag mono">01 — INTAKE</p>
+        <h3>Statement intake</h3>
+        <p>Raw text is split into individual claims so each one is scored on its own, not as part of a general impression of the whole passage.</p>
       </div>
-      <p class="statement">
-        "I <span class="flag">basically</span> left the office around 6, give or take. I <span class="flag ok">drove straight home</span>, didn't stop anywhere. I <span class="flag">don't really remember</span> what I did after that, to be honest."
-      </p>
-      <div class="verdict">
-        <span>DECEPTION SCORE</span>
-        <div class="meter"><i></i></div>
-        <b>78 / 100</b>
+      <div class="method-node">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M20 20 15.3 15.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <p class="tag mono">02 — SCAN</p>
+        <h3>Linguistic scan</h3>
+        <p>Each claim is checked against known deception markers: hedges, distancing pronouns, tense inconsistency, and detail that's over- or under-specified.</p>
+      </div>
+      <div class="method-node">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 15a8 8 0 1 1 16 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 15 16 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="15" r="1.3" fill="currentColor"/></svg>
+        <p class="tag mono">03 — SCORE</p>
+        <h3>Confidence score</h3>
+        <p>Flagged claims are weighted into a single 0–100 score, with the exact phrases that moved the needle highlighted in the output.</p>
       </div>
     </div>
   </section>
 
-  <section>
-    <div class="section-num">04 — Stack</div>
-    <h2>Built with</h2>
-    <div class="stack-grid">
-      <div class="stack-item"><div class="k">MODEL</div><div class="v">Fine-tuned LLM</div></div>
-      <div class="stack-item"><div class="k">BACKEND</div><div class="v">Python / Flask</div></div>
-      <div class="stack-item"><div class="k">INTERFACE</div><div class="v">HTML / CSS / JS</div></div>
-      <div class="stack-item"><div class="k">HOSTING</div><div class="v">GitHub Pages</div></div>
+  <div class="dossier-breakout">
+    <div class="dossier-inner">
+      <p class="exhibit-tag" id="exhibit-c">Exhibit C — Sample case</p>
+      <h2>What the output looks like</h2>
+
+      <div class="dossier" id="dossier-panel">
+        <span class="scanline" aria-hidden="true"></span>
+        <div class="case-head">
+          <span>CASE #0417</span>
+          <span>SOURCE: WRITTEN_STATEMENT</span>
+        </div>
+        <p class="statement">
+          "I <span class="flag" style="--d:1">basically</span> left the office around 6, give or take. I <span class="flag ok" style="--d:2">drove straight home</span>, didn't stop anywhere. I <span class="flag" style="--d:3">don't really remember</span> what I did after that, to be honest."
+        </p>
+        <div class="verdict">
+          <span>DECEPTION SCORE</span>
+          <div class="meter" role="img" aria-label="Deception score meter, 78 out of 100"><i></i></div>
+          <b>78 / 100</b>
+        </div>
+      </div>
+
+      <div class="analyzer">
+        <div class="analyzer-head">
+          <h3>Run your own statement</h3>
+          <span>LOCAL HEURISTIC DEMO</span>
+        </div>
+        <form id="analyzer-form" novalidate>
+          <label class="field-label" for="statement-input">Paste a statement to analyze</label>
+          <textarea id="statement-input" placeholder="e.g. I left around six, I think. I don't really remember what happened after that."></textarea>
+          <div class="analyzer-actions">
+            <button type="submit" class="btn-run" id="run-btn">Run analysis</button>
+            <p class="analyzer-error mono" id="analyzer-error" role="alert">Case file is empty — enter a statement to analyze.</p>
+          </div>
+        </form>
+        <div class="analysis-result" id="analysis-result" aria-live="polite">
+          <p class="empty-state">No analysis yet. Paste a statement above and run the scan.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section aria-labelledby="exhibit-d-heading">
+    <p class="exhibit-tag">Exhibit D — Components</p>
+    <h2 id="exhibit-d-heading">Built with</h2>
+    <div class="stack-mosaic">
+      <div class="stack-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M9 3v2M15 3v2M9 19v2M15 19v2M3 9h2M3 15h2M19 9h2M19 15h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <div class="k">MODEL</div><div class="v">Fine-tuned LLM</div>
+      </div>
+      <div class="stack-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4" width="16" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="14" width="16" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><circle cx="7.5" cy="7" r=".9" fill="currentColor"/><circle cx="7.5" cy="17" r=".9" fill="currentColor"/></svg>
+        <div class="k">BACKEND</div><div class="v">Python / Flask</div>
+      </div>
+      <div class="stack-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="1" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 8.5h17" stroke="currentColor" stroke-width="1.5"/></svg>
+        <div class="k">INTERFACE</div><div class="v">HTML / CSS / JS</div>
+      </div>
+      <div class="stack-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17a4 4 0 0 1-.6-7.96 5 5 0 0 1 9.7-1.7A4.5 4.5 0 0 1 17.5 17H7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        <div class="k">HOSTING</div><div class="v">GitHub Pages</div>
+      </div>
     </div>
   </section>
 
-  <footer id="repo">
-    <div class="section-num" style="justify-content:center;display:flex;">05 — Access</div>
-    <h2>Open the case file</h2>
+  <footer id="exhibit-e" aria-labelledby="exhibit-e-heading">
+    <p class="exhibit-tag" style="justify-content:center;display:flex;">Exhibit E — Access</p>
+    <svg class="stamp-seal" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="2"/>
+      <circle cx="50" cy="50" r="34" stroke="currentColor" stroke-width="1"/>
+      <text x="50" y="46" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="currentColor" letter-spacing="1">CASE FILE</text>
+      <text x="50" y="60" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="currentColor" letter-spacing="1">OPEN</text>
+    </svg>
+    <h2 id="exhibit-e-heading">Open the case file</h2>
+    <p class="body-text">Source, model notes, and the full write-up live in the repository.</p>
     <div class="btn-row">
       <a class="btn primary" href="https://github.com/musaib120604/Veritas">View on GitHub</a>
-      <a class="btn ghost" href="#">Read the docs</a>
+      <a class="btn ghost" href="https://github.com/musaib120604/Veritas#readme">Read the method</a>
     </div>
     <div class="foot-note">VERITAS is a research project. Not a legal or forensic instrument.</div>
   </footer>
 
 </main>
+
+<script>
+(function(){
+  "use strict";
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* trigger the dossier scanline once it enters view */
+  var dossier = document.getElementById('dossier-panel');
+  if (dossier && !reduceMotion && 'IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting){
+          dossier.classList.add('is-scanning');
+          io.unobserve(dossier);
+        }
+      });
+    }, {threshold:0.4});
+    io.observe(dossier);
+  } else if (dossier){
+    dossier.classList.add('is-scanning');
+  }
+
+  /* --- mini analyzer: local heuristic demo, not the production model --- */
+  var HEDGES = [
+    'kind of','sort of','basically','honestly','to be honest','i guess',
+    'i think','maybe','probably','i don\'t remember','i don\'t really remember',
+    'not sure','not really sure','give or take','more or less','i suppose'
+  ];
+
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function highlight(text){
+    var escaped = escapeHtml(text);
+    var count = 0;
+    var pattern = new RegExp('(' + HEDGES.map(function(h){
+      return h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }).join('|') + ')', 'gi');
+    var html = escaped.replace(pattern, function(match){
+      count++;
+      return '<span class="flag" style="opacity:1" data-hit="' + count + '">' + match + '</span>';
+    });
+    return { html: html, count: count };
+  }
+
+  var form = document.getElementById('analyzer-form');
+  var input = document.getElementById('statement-input');
+  var errorEl = document.getElementById('analyzer-error');
+  var resultEl = document.getElementById('analysis-result');
+  var runBtn = document.getElementById('run-btn');
+
+  if (form){
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      var text = input.value.trim();
+
+      if (!text){
+        errorEl.classList.add('is-visible');
+        input.focus();
+        return;
+      }
+      errorEl.classList.remove('is-visible');
+
+      runBtn.disabled = true;
+      runBtn.textContent = 'Scanning…';
+      resultEl.innerHTML = '<p class="empty-state">Reading the statement for linguistic markers…</p>';
+
+      var delay = reduceMotion ? 0 : 900;
+      window.setTimeout(function(){
+        var result = highlight(text);
+        var score = Math.min(96, 14 + result.count * 15 + Math.round(text.length / 60));
+        var label = score >= 65 ? 'High concern' : score >= 35 ? 'Moderate concern' : 'Low concern';
+
+        resultEl.innerHTML =
+          '<div class="result-body">' +
+            '<p class="statement">"' + result.html + '"</p>' +
+            '<div class="verdict">' +
+              '<span>DECEPTION SCORE</span>' +
+              '<div class="meter" role="img" aria-label="Deception score meter, ' + score + ' out of 100"><i style="width:' + score + '%"></i></div>' +
+              '<b>' + score + ' / 100</b>' +
+            '</div>' +
+            '<p class="caption">' + label + ' — ' + result.count + ' marker' + (result.count === 1 ? '' : 's') + ' flagged. Heuristic demo only; the production model weighs many more signals.</p>' +
+          '</div>';
+
+        runBtn.disabled = false;
+        runBtn.textContent = 'Run analysis';
+      }, delay);
+    });
+
+    input.addEventListener('input', function(){
+      if (errorEl.classList.contains('is-visible') && input.value.trim()){
+        errorEl.classList.remove('is-visible');
+      }
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
