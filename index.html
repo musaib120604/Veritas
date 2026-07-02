@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VERITAS — LLM Deception Detection</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#0B0D0E;
+    --paper:#E8E4DA;
+    --paper-dim:#c9c5ba;
+    --truth:#4FA88C;
+    --lie:#C1443C;
+    --grey:#8B8F91;
+    --line:#232629;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--paper);
+    font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.6;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  a{color:inherit;}
+
+  /* ---- layout shell ---- */
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px;}
+  header.nav{
+    position:sticky;top:0;z-index:10;
+    background:rgba(11,13,14,0.9);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav .wrap{
+    display:flex;align-items:center;justify-content:space-between;
+    height:56px;
+  }
+  .nav .brand{font-family:'IBM Plex Mono',monospace;font-weight:700;letter-spacing:0.08em;font-size:14px;}
+  .nav .brand span{color:var(--lie);}
+  .nav a.cta{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    border:1px solid var(--paper-dim);padding:6px 12px;border-radius:2px;
+    text-decoration:none;transition:all .2s ease;
+  }
+  .nav a.cta:hover{background:var(--paper);color:var(--bg);}
+
+  /* ---- hero ---- */
+  .hero{padding:100px 0 70px;position:relative;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--grey);
+    letter-spacing:0.15em;text-transform:uppercase;margin-bottom:20px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--lie);animation:blink 1.6s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+  h1{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:clamp(42px,8vw,84px);
+    letter-spacing:-0.02em;
+    line-height:0.95;
+  }
+  h1 em{font-style:normal;color:var(--truth);}
+  .lede{
+    max-width:520px;margin-top:22px;font-size:17px;color:#c8c4ba;
+  }
+
+  /* polygraph pulse svg */
+  .pulse-box{margin-top:56px;border:1px solid var(--line);background:#0e1113;}
+  .pulse-box svg{display:block;width:100%;height:120px;}
+  .pulse-line{
+    fill:none;stroke:var(--truth);stroke-width:2;
+    stroke-dasharray:1400;stroke-dashoffset:1400;
+    animation:draw 3.2s ease-in-out infinite;
+  }
+  @keyframes draw{
+    0%{stroke-dashoffset:1400;stroke:var(--truth);}
+    48%{stroke-dashoffset:0;stroke:var(--truth);}
+    52%{stroke:var(--lie);}
+    100%{stroke-dashoffset:-1400;stroke:var(--lie);}
+  }
+  .pulse-label{
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--grey);
+    padding:10px 14px;border-top:1px solid var(--line);
+  }
+
+  /* ---- section shared ---- */
+  section{padding:64px 0;border-top:1px solid var(--line);}
+  .section-num{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--grey);
+    margin-bottom:14px;
+  }
+  h2{
+    font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;
+    margin-bottom:20px;letter-spacing:-0.01em;
+  }
+  p.body-text{color:#c8c4ba;max-width:640px;}
+
+  /* how it works */
+  .steps{display:grid;grid-template-columns:1fr;gap:0;margin-top:30px;}
+  .step{
+    display:grid;grid-template-columns:60px 1fr;gap:18px;
+    padding:20px 0;border-top:1px solid var(--line);
+  }
+  .step:first-child{border-top:none;}
+  .step .tag{font-family:'IBM Plex Mono',monospace;color:var(--grey);font-size:13px;padding-top:2px;}
+  .step h3{font-size:16px;font-weight:600;margin-bottom:6px;}
+  .step p{color:#a9a59c;font-size:14.5px;max-width:520px;}
+
+  /* case sample */
+  .case{
+    border:1px solid var(--line);background:#0e1113;padding:26px;margin-top:28px;
+  }
+  .case-head{
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--grey);
+    border-bottom:1px dashed var(--line);padding-bottom:14px;margin-bottom:18px;
+  }
+  .statement{font-size:16px;color:var(--paper);line-height:1.8;}
+  .flag{
+    padding:1px 5px;border-radius:2px;cursor:default;
+    border-bottom:2px solid var(--lie);background:rgba(193,68,60,0.12);
+  }
+  .flag.ok{border-bottom-color:var(--truth);background:rgba(79,168,140,0.12);}
+  .verdict{
+    margin-top:20px;display:flex;align-items:center;gap:14px;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;
+  }
+  .meter{flex:1;height:6px;background:#1c2022;border-radius:3px;overflow:hidden;}
+  .meter i{display:block;height:100%;width:78%;background:linear-gradient(90deg,var(--truth),var(--lie));}
+  .verdict b{color:var(--lie);}
+
+  /* stack */
+  .stack-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:1px;background:var(--line);margin-top:26px;border:1px solid var(--line);
+  }
+  .stack-item{background:var(--bg);padding:16px;}
+  .stack-item .k{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--grey);}
+  .stack-item .v{font-size:14.5px;margin-top:4px;}
+
+  /* footer / cta */
+  footer{padding:70px 0 50px;text-align:center;}
+  footer h2{font-size:28px;}
+  .btn-row{display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap;}
+  .btn{
+    font-family:'IBM Plex Mono',monospace;font-size:13px;text-decoration:none;
+    padding:12px 22px;border-radius:2px;transition:all .2s ease;
+  }
+  .btn.primary{background:var(--paper);color:var(--bg);}
+  .btn.primary:hover{background:var(--truth);}
+  .btn.ghost{border:1px solid var(--paper-dim);color:var(--paper);}
+  .btn.ghost:hover{border-color:var(--paper);}
+  .foot-note{margin-top:40px;color:var(--grey);font-size:12px;font-family:'IBM Plex Mono',monospace;}
+
+  @media (prefers-reduced-motion: reduce){
+    .pulse-line{animation:none;stroke-dashoffset:0;}
+    .eyebrow::before{animation:none;}
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="brand">VERI<span>TAS</span></div>
+    <a class="cta" href="https://github.com/musaib120604/Veritas">View source →</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero" style="border-top:none;">
+    <div class="eyebrow">Case file // deception analysis model</div>
+    <h1>Does it<br>hold <em>up?</em></h1>
+    <p class="lede">Veritas is an LLM fine-tuned to flag linguistic markers of deception in written statements — hedging, distancing language, inconsistent detail — and return a confidence score, not a verdict.</p>
+
+    <div class="pulse-box">
+      <svg viewBox="0 0 700 120" preserveAspectRatio="none">
+        <path class="pulse-line" d="M0,60 L80,60 L100,60 L115,20 L130,100 L145,60 L220,60 L240,60 L255,35 L270,85 L285,60 L400,60 L420,60 L432,10 L444,110 L456,60 L560,60 L580,60 L595,40 L610,80 L625,60 L700,60"/>
+      </svg>
+      <div class="pulse-label">
+        <span>SIGNAL: LINGUISTIC_TRACE.LOG</span>
+        <span>STATUS: MONITORING</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">01 — Overview</div>
+    <h2>Read the statement, not the person</h2>
+    <p class="body-text">Veritas doesn't watch faces or measure pulse. It works entirely from text — transcripts, chat logs, written statements — scoring each claim against patterns associated with deceptive language in prior research: qualifier overuse, low self-reference, verb tense shifts, missing sensory detail.</p>
+  </section>
+
+  <section>
+    <div class="section-num">02 — How it works</div>
+    <h2>Three passes over every statement</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="tag mono">IN</div>
+        <div>
+          <h3>Statement intake</h3>
+          <p>Raw text is chunked into individual claims so each one can be scored independently rather than the passage as a whole.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="tag mono">02</div>
+        <div>
+          <h3>Linguistic scan</h3>
+          <p>The model checks each claim for known deception markers — hedges, distancing pronouns, tense inconsistency, over-specific or under-specific detail.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="tag mono">03</div>
+        <div>
+          <h3>Confidence score</h3>
+          <p>Flagged claims are weighted into a single 0–100 score with the contributing phrases highlighted, so the reasoning stays visible.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">03 — Sample case</div>
+    <h2>What the output looks like</h2>
+    <div class="case">
+      <div class="case-head">
+        <span>CASE #0417</span>
+        <span>SOURCE: WRITTEN_STATEMENT</span>
+      </div>
+      <p class="statement">
+        "I <span class="flag">basically</span> left the office around 6, give or take. I <span class="flag ok">drove straight home</span>, didn't stop anywhere. I <span class="flag">don't really remember</span> what I did after that, to be honest."
+      </p>
+      <div class="verdict">
+        <span>DECEPTION SCORE</span>
+        <div class="meter"><i></i></div>
+        <b>78 / 100</b>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">04 — Stack</div>
+    <h2>Built with</h2>
+    <div class="stack-grid">
+      <div class="stack-item"><div class="k">MODEL</div><div class="v">Fine-tuned LLM</div></div>
+      <div class="stack-item"><div class="k">BACKEND</div><div class="v">Python / Flask</div></div>
+      <div class="stack-item"><div class="k">INTERFACE</div><div class="v">HTML / CSS / JS</div></div>
+      <div class="stack-item"><div class="k">HOSTING</div><div class="v">GitHub Pages</div></div>
+    </div>
+  </section>
+
+  <footer id="repo">
+    <div class="section-num" style="justify-content:center;display:flex;">05 — Access</div>
+    <h2>Open the case file</h2>
+    <div class="btn-row">
+      <a class="btn primary" href="https://github.com/musaib120604/Veritas">View on GitHub</a>
+      <a class="btn ghost" href="#">Read the docs</a>
+    </div>
+    <div class="foot-note">VERITAS is a research project. Not a legal or forensic instrument.</div>
+  </footer>
+
+</main>
+
+</body>
+</html>
