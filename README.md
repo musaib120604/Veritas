@@ -4,7 +4,7 @@ An LLM fine-tuned to detect linguistic markers of deception in written statement
 
 Veritas doesn't analyze voice, face, or biometric signals — it works purely from text (transcripts, chat logs, written statements) and scores each claim against known deception patterns: hedging language, distancing pronouns, tense inconsistency, and detail imbalance. Output is a confidence score with the contributing phrases highlighted, not a binary verdict.
 
-**[Live demo →](https://musaib120604.github.io/Veritas/)** _(enable Pages first)_
+**[Live demo →](https://musaib120604.github.io/Veritas/)** _(https://veritasllm.vercel.app/)_
 
 ---
 
