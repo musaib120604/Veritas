@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Veritas — A field study in linguistic deception</title>
 <meta name="description" content="Veritas is a fine-tuned LLM that reads written statements for linguistic markers of deception and returns a confidence score, not a verdict.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpolygon points='76,150 100,156 60,42 46,38' fill='%2325231E'/%3E%3Cpath d='M106,152 L130,98' stroke='%2325231E' stroke-width='10' stroke-linecap='round'/%3E%3Cpath d='M140,86 L166,44' stroke='%2325231E' stroke-width='10' stroke-linecap='round'/%3E%3Crect x='88' y='144' width='17' height='17' transform='rotate(45 96.5 152.5)' fill='%23BE4E2B'/%3E%3C/svg%3E">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,440;0,9..144,560;1,9..144,400;1,9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -85,7 +86,26 @@
     border-bottom:1px solid var(--line);
   }
   .nav-inner{display:flex;align-items:center;justify-content:space-between;height:76px;}
-  .brand{font-family:var(--serif);font-style:italic;font-weight:500;font-size:21px;letter-spacing:-.01em;}
+  .brand{font-family:var(--serif);font-style:italic;font-weight:500;font-size:21px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;}
+  .brand-mark{height:42px;width:auto;flex-shrink:0;overflow:visible;}
+  .brand-mark .stroke{stroke:currentColor;}
+  .brand-mark .wedge{fill:currentColor;}
+  .brand-mark .pivot{fill:var(--rust);}
+  .brand-mark .ring-dash{
+    stroke:currentColor;
+    stroke-width:5;
+    stroke-linecap:round;
+    opacity:0;
+    stroke-dasharray:16;
+    stroke-dashoffset:16;
+    animation:dashDraw .35s linear forwards;
+  }
+  @keyframes dashDraw{
+    0%{opacity:1;stroke-dashoffset:16;}
+    100%{opacity:1;stroke-dashoffset:0;}
+  }
+  @media (prefers-reduced-motion:reduce){ .brand-mark .ring-dash{animation:none;opacity:1;stroke-dashoffset:0;} }
+  .footer-brand .brand{margin-bottom:6px;}
   .nav-links{display:flex;align-items:center;gap:var(--s4);}
   .nav-links a{
     font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
@@ -354,7 +374,27 @@
 
 <header class="nav">
   <div class="wrap nav-inner">
-    <div class="brand">Veritas</div>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <line class="ring-dash" style="animation-delay:0.0s" x1="95.0" y1="7.0" x2="111.0" y2="7.0"/>
+        <line class="ring-dash" style="animation-delay:0.15s" x1="141.1" y1="15.1" x2="154.9" y2="23.1"/>
+        <line class="ring-dash" style="animation-delay:0.3s" x1="176.9" y1="45.1" x2="184.9" y2="58.9"/>
+        <line class="ring-dash" style="animation-delay:0.45s" x1="193.0" y1="89.0" x2="193.0" y2="105.0"/>
+        <line class="ring-dash" style="animation-delay:0.6s" x1="184.9" y1="135.1" x2="176.9" y2="148.9"/>
+        <line class="ring-dash" style="animation-delay:0.75s" x1="154.9" y1="170.9" x2="141.1" y2="178.9"/>
+        <line class="ring-dash" style="animation-delay:0.9s" x1="111.0" y1="187.0" x2="95.0" y2="187.0"/>
+        <line class="ring-dash" style="animation-delay:1.05s" x1="64.9" y1="178.9" x2="51.1" y2="170.9"/>
+        <line class="ring-dash" style="animation-delay:1.2s" x1="29.1" y1="148.9" x2="21.1" y2="135.1"/>
+        <line class="ring-dash" style="animation-delay:1.35s" x1="13.0" y1="105.0" x2="13.0" y2="89.0"/>
+        <line class="ring-dash" style="animation-delay:1.5s" x1="21.1" y1="58.9" x2="29.1" y2="45.1"/>
+        <line class="ring-dash" style="animation-delay:1.65s" x1="51.1" y1="23.1" x2="64.9" y2="15.1"/>
+        <polygon class="wedge" points="76,150 100,156 60,42 46,38"/>
+        <path class="stroke" d="M106,152 L130,98" stroke-width="9" stroke-linecap="round"/>
+        <path class="stroke" d="M140,86 L166,44" stroke-width="9" stroke-linecap="round"/>
+        <rect class="pivot" x="89" y="145" width="15" height="15" transform="rotate(45 96.5 152.5)"/>
+      </svg>
+      Veritas
+    </div>
     <nav class="nav-links" aria-label="Section navigation">
       <a href="#method">Method</a>
       <a href="#signal">Signal</a>
@@ -706,7 +746,27 @@
   <div class="wrap">
     <div class="footer-grid">
       <div class="footer-brand">
-        <span class="brand">Veritas</span>
+        <span class="brand">
+          <svg class="brand-mark" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <line class="ring-dash" style="animation-delay:0.0s" x1="95.0" y1="7.0" x2="111.0" y2="7.0"/>
+            <line class="ring-dash" style="animation-delay:0.15s" x1="141.1" y1="15.1" x2="154.9" y2="23.1"/>
+            <line class="ring-dash" style="animation-delay:0.3s" x1="176.9" y1="45.1" x2="184.9" y2="58.9"/>
+            <line class="ring-dash" style="animation-delay:0.45s" x1="193.0" y1="89.0" x2="193.0" y2="105.0"/>
+            <line class="ring-dash" style="animation-delay:0.6s" x1="184.9" y1="135.1" x2="176.9" y2="148.9"/>
+            <line class="ring-dash" style="animation-delay:0.75s" x1="154.9" y1="170.9" x2="141.1" y2="178.9"/>
+            <line class="ring-dash" style="animation-delay:0.9s" x1="111.0" y1="187.0" x2="95.0" y2="187.0"/>
+            <line class="ring-dash" style="animation-delay:1.05s" x1="64.9" y1="178.9" x2="51.1" y2="170.9"/>
+            <line class="ring-dash" style="animation-delay:1.2s" x1="29.1" y1="148.9" x2="21.1" y2="135.1"/>
+            <line class="ring-dash" style="animation-delay:1.35s" x1="13.0" y1="105.0" x2="13.0" y2="89.0"/>
+            <line class="ring-dash" style="animation-delay:1.5s" x1="21.1" y1="58.9" x2="29.1" y2="45.1"/>
+            <line class="ring-dash" style="animation-delay:1.65s" x1="51.1" y1="23.1" x2="64.9" y2="15.1"/>
+            <polygon class="wedge" points="76,150 100,156 60,42 46,38"/>
+            <path class="stroke" d="M106,152 L130,98" stroke-width="9" stroke-linecap="round"/>
+            <path class="stroke" d="M140,86 L166,44" stroke-width="9" stroke-linecap="round"/>
+            <rect class="pivot" x="89" y="145" width="15" height="15" transform="rotate(45 96.5 152.5)"/>
+          </svg>
+          Veritas
+        </span>
         <p>A field study in linguistic deception detection. Research project — not a legal or forensic instrument.</p>
       </div>
       <div class="footer-col">
